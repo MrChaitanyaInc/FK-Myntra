@@ -3,8 +3,8 @@
 // @namespace    http://tampermonkey.net/
 // @version      3.0
 // @description  Enhances HubOps with font injection, dynamic summary updates, keybindings, and appends styled data to the interface.
-// @author       You
-// @match        http://10.24.1.\
+// @author       Mr.Chaitanya.INC
+// @match        http://10.24.1.71/hub-ops/*
 // @grant        none
 // @require        https://code.jquery.com/jquery-3.6.0.min.js
 // @require        https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js

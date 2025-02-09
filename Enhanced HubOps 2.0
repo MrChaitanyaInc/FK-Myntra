@@ -1,0 +1,140 @@
+  // ==UserScript==
+// @name         Enhanced HubOps 2.0
+// @namespace    http://tampermonkey.net/
+// @version      3.0
+// @description  Enhances HubOps with font injection, dynamic summary updates, keybindings, and appends styled data to the interface.
+// @author       You
+// @match        http://10.24.1.71/hub-ops/*
+// @grant        none
+// @require        https://code.jquery.com/jquery-3.6.0.min.js
+// @require        https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js
+// ==/UserScript==
+(function () {
+    'use strict';
+
+    const $ = window.jQuery || jQuery;
+
+    // Add Bootstrap CSS dynamically
+    const bootstrapCSS = document.createElement('link');
+    bootstrapCSS.rel = 'stylesheet';
+    bootstrapCSS.href = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css';
+    document.head.appendChild(bootstrapCSS);
+
+    // Inject custom font
+    function injectFont() {
+        $('<link>', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }).appendTo('head');
+        $('<link>', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' }).appendTo('head');
+        $('<link>', {
+            rel: 'stylesheet',
+            href: 'https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&display=swap'
+        }).appendTo('head');
+        $('body').css('font-family', "'Josefin Sans', sans-serif");
+
+        /* if (FancyToastCompo.length) {
+            FancyToastCompo.css({
+                'left': '20%', // Removes the left positioning
+            });
+        }*/
+
+    }
+
+
+    // Dynamically update the summary
+    function updateSummary() {
+        const singleValueElement = $('.css-1uccc91-singleValue').first();
+        const targetHeading = $('h3.HubDashboard-bold-heading-1jSDM0qcGB39fDuuQWviy2');
+
+        if (singleValueElement.length === 0 || targetHeading.length === 0) return;
+
+        let extractedText = singleValueElement.text().trim().replace('MYNTRAHub_', '');
+        if (targetHeading.text().includes(extractedText)) return;
+
+        targetHeading.append($('<span>', { text: ` - ${extractedText}`, css: { color: 'blue' } }));
+    }
+
+    // Periodically check and update summary
+    function initializePeriodicCheck() {
+        setInterval(updateSummary, 1000);
+    }
+
+    // Append styled data to the interface
+    function appendSummaryData() {
+        let cpdValue = '', p0Value = '', totalValue = '';
+
+        $('table.pcm-table tbody tr').each(function () {
+            const row = $(this);
+            const cellText = row.find('td:first').text().trim();
+
+            if (cellText === 'Must attempt today - Today CPD') {
+                cpdValue = row.find('td:nth-child(2)').text().trim();
+            } else if (cellText === 'Priority Shipments [P0]') {
+                p0Value = row.find('td:nth-child(2)').text().trim();
+            } else if (cellText === 'Total') {
+                totalValue = row.find('td:nth-child(2)').text().trim();
+            }
+        });
+
+        if (!cpdValue || !p0Value || !totalValue) return;
+
+        const summaryDiv = $('<div>', {
+            css: {
+                position: 'absolute',
+                top: '5px',
+                right: '25px',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                padding: '5px 10px',
+                border: '1px solid #ccc',
+                borderRadius: '7px',
+                zIndex: 1000
+            }
+        });
+
+        const labelCPD = $('<span>', { text: 'CPD', css: { fontWeight: 'bold', color: 'blue', marginRight: '5px' } });
+        const valueCPD = $('<span>', { text: cpdValue, css: { color: 'black' } });
+        const labelP0 = $('<span>', { text: 'P0', css: { fontWeight: 'bold', color: 'blue', margin: '0 5px' } });
+        const valueP0 = $('<span>', { text: p0Value, css: { color: 'black' } });
+        const labelTotal = $('<span>', { text: 'Total', css: { fontWeight: 'bold', color: 'blue', margin: '0 5px' } });
+        const valueTotal = $('<span>', { text: totalValue, css: { color: 'black' } });
+
+        summaryDiv.append(labelCPD, valueCPD, ' | ', labelP0, valueP0, ' | ', labelTotal, valueTotal);
+        $('.sc-fzXfPa.cxuroG.col-md').first().css('position', 'relative').append(summaryDiv);
+    }
+
+    // Initialize appending data on load
+    function initializeAppendSummary() {
+        const interval = setInterval(() => {
+            if ($('table.pcm-table').length > 0 && $('.sc-fzXfPa.cxuroG.col-md').length > 0) {
+                appendSummaryData();
+                clearInterval(interval);
+            }
+        }, 1000);
+    }
+
+    // Define a function to add border-radius to buttons
+    function addBorderRadiusToButtons() {
+        $('button').each(function () {
+            if (!$(this).hasClass('border-radius-applied')) {
+                $(this).css('border-radius', '10px'); // Apply the border-radius
+                $(this).addClass('border-radius-applied'); // Mark as processed
+            }
+        });
+    }
+
+
+    // Set up a MutationObserver to detect DOM changes
+    const observer = new MutationObserver(() => {
+        addBorderRadiusToButtons();
+        injectFont();
+        updateSummary();
+        initializePeriodicCheck();
+        initializeAppendSummary();
+    });
+
+    // Start observing after script setup
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+    });
+
+
+})();
